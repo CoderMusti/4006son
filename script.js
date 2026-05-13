@@ -48,7 +48,7 @@ const MOLECULES = [
   {
     id: 'water',
     tmLabel: 'H2O SU',    // must match Teachable Machine class name
-    name: 'Water',
+    name: 'SU',
     formula: 'H₂O',
     description: 'Two hydrogen atoms bonded to one oxygen atom. Bent geometry, ~104.5° bond angle.',
     buildHint: 'Use 1 red (O) and 2 white (H) balls, 2 short sticks at ~105° angle.',
@@ -67,7 +67,7 @@ const MOLECULES = [
   {
     id: 'salt',
     tmLabel: 'NaCl Tuz',
-    name: 'Salt',
+    name: 'TUZ',
     formula: 'NaCl',
     description: 'Sodium chloride. Ionic bond between Na⁺ and Cl⁻. Crystal lattice structure.',
     buildHint: 'Use 1 silver (Na) and 1 green (Cl) ball connected by one stick.',
@@ -85,7 +85,7 @@ const MOLECULES = [
   {
     id: 'ammonia',
     tmLabel: 'Nh3 Amonyak',
-    name: 'Ammonia',
+    name: 'Amonyak',
     formula: 'NH₃',
     description: 'One nitrogen atom bonded to three hydrogen atoms. Trigonal pyramidal shape.',
     buildHint: 'Use 1 blue (N) ball and 3 white (H) balls in a pyramid with 3 sticks.',
@@ -107,7 +107,7 @@ const MOLECULES = [
   {
     id: 'benzene',
     tmLabel: 'C6H6 Benzen',
-    name: 'Benzene',
+    name: 'Benzen',
     formula: 'C₆H₆',
     description: 'Six carbon atoms in a hexagonal ring, each bonded to one hydrogen. Aromatic.',
     buildHint: 'Arrange 6 black (C) balls in a hexagon with alternating double bonds + 6 H balls.',
