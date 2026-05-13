@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Molecule Builder Challenge</title>
+
+  <!-- TensorFlow.js & Teachable Machine Image library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+
+  <!-- Google Fonts: Orbitron (display) + Share Tech Mono (mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== ANIMATED BACKGROUND PARTICLES ===== -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- ===== SCANLINE OVERLAY ===== -->
+  <div class="scanlines"></div>
+
+  <!-- ===== MAIN WRAPPER ===== -->
+  <div class="app-wrapper">
+
+    <!-- ── HEADER ── -->
+    <header class="site-header">
+      <div class="header-logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">MOLECULE<strong>BUILDER</strong></span>
+      </div>
+      <div class="header-stats">
+        <div class="stat-block">
+          <span class="stat-label">SCORE</span>
+          <span class="stat-value" id="scoreDisplay">0</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">LEVEL</span>
+          <span class="stat-value" id="levelDisplay">—</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">TIME</span>
+          <span class="stat-value timer-display" id="timerDisplay">0:00</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="main-content">
+
+      <!-- ====== SCREEN: START ====== -->
+      <section class="screen active" id="screenStart">
+        <div class="start-card">
+          <div class="start-hexagon">
+            <svg viewBox="0 0 120 140" class="hex-svg">
+              <polygon points="60,5 115,35 115,105 60,135 5,105 5,35" fill="none" stroke="var(--neon-blue)" stroke-width="2"/>
+              <polygon points="60,15 105,40 105,100 60,125 15,100 15,40" fill="none" stroke="var(--neon-green)" stroke-width="1" opacity="0.4"/>
+              <text x="60" y="72" text-anchor="middle" font-size="40" fill="var(--neon-blue)">⚗️</text>
+            </svg>
+          </div>
+          <h1 class="start-title">MOLECULE<br/><span class="highlight">BUILDER</span><br/>CHALLENGE</h1>
+          <p class="start-desc">Build real molecule models and scan them with your webcam.<br/>Match the target molecule to score points!</p>
+
+          <!-- Difficulty selector -->
+          <div class="difficulty-group">
+            <span class="diff-label">SELECT DIFFICULTY</span>
+            <div class="diff-buttons">
+              <button class="diff-btn active" data-diff="easy">EASY</button>
+              <button class="diff-btn" data-diff="medium">MEDIUM</button>
+              <button class="diff-btn" data-diff="hard">HARD</button>
+            </div>
+          </div>
+
+          <!-- Model URL input (for Teachable Machine) -->
+          <div class="model-url-group">
+            <span class="diff-label">TEACHABLE MACHINE MODEL URL</span>
+            <input type="text" id="modelUrlInput" class="model-url-input"
+              placeholder="https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/"
+              value="https://teachablemachine.withgoogle.com/models/TvZEWC4mn/" />
+            <p class="model-url-hint">Export your model from <a href="https://teachablemachine.withgoogle.com" target="_blank">teachablemachine.withgoogle.com</a> and paste the URL above.</p>
+          </div>
+
+          <button class="btn-primary" id="startBtn">
+            <span class="btn-icon">▶</span> START EXPERIMENT
+          </button>
+        </div>
+      </section>
+
+      <!-- ====== SCREEN: GAME ====== -->
+      <section class="screen" id="screenGame">
+        <div class="game-layout">
+
+          <!-- LEFT: Target molecule panel -->
+          <div class="panel panel-target">
+            <div class="panel-header">TARGET MOLECULE</div>
+            <div class="molecule-display" id="moleculeDisplay">
+              <!-- Filled by JS -->
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-label">TIME REMAINING</div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="timerBar"></div>
+              </div>
+            </div>
+            <button class="btn-secondary" id="nextMolBtn">⟳ NEXT MOLECULE</button>
+          </div>
+
+          <!-- CENTER: Webcam panel -->
+          <div class="panel panel-webcam">
+            <div class="panel-header">SCAN STATION</div>
+            <div class="webcam-frame" id="webcamFrame">
+              <video id="webcamVideo" autoplay muted playsinline></video>
+              <canvas id="snapshotCanvas"></canvas>
+              <div class="webcam-corner tl"></div>
+              <div class="webcam-corner tr"></div>
+              <div class="webcam-corner bl"></div>
+              <div class="webcam-corner br"></div>
+              <div class="scan-line" id="scanLine"></div>
+              <div class="webcam-overlay" id="webcamOverlay">
+                <!-- Result shown after scan -->
+              </div>
+            </div>
+            <div class="webcam-controls">
+              <button class="btn-scan" id="scanBtn">
+                <span class="scan-icon">◎</span> SCAN MOLECULE
+              </button>
+              <button class="btn-secondary hidden" id="retryBtn">↺ RETRY SCAN</button>
+            </div>
+            <!-- Status message -->
+            <div class="status-message" id="statusMessage">
+              Build your molecule and press SCAN when ready.
+            </div>
+          </div>
+
+          <!-- RIGHT: Predictions panel -->
+          <div class="panel panel-predictions">
+            <div class="panel-header">AI ANALYSIS</div>
+            <div class="predictions-list" id="predictionsList">
+              <!-- Filled by JS -->
+            </div>
+            <div class="confidence-legend">
+              <div class="legend-row"><span class="legend-dot green"></span>≥ 85% — Match</div>
+              <div class="legend-row"><span class="legend-dot yellow"></span>50–84% — Uncertain</div>
+              <div class="legend-row"><span class="legend-dot red"></span>&lt; 50% — Low</div>
+            </div>
+            <div class="model-status" id="modelStatus">
+              <span class="status-dot loading" id="statusDot"></span>
+              <span id="statusText">Loading model…</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====== SCREEN: SUCCESS ====== -->
+      <section class="screen" id="screenSuccess">
+        <div class="result-card success-card">
+          <div class="result-icon" id="successIcon">✓</div>
+          <h2 class="result-title">MOLECULE IDENTIFIED!</h2>
+          <p class="result-molecule" id="successMolecule"></p>
+          <div class="points-awarded" id="pointsAwarded"></div>
+          <div class="bonus-info" id="bonusInfo"></div>
+          <button class="btn-primary" id="continueBtn">
+            ▶ NEXT CHALLENGE
+          </button>
+        </div>
+      </section>
+
+      <!-- ====== SCREEN: GAME OVER ====== -->
+      <section class="screen" id="screenGameOver">
+        <div class="result-card gameover-card">
+          <div class="result-icon">⏱</div>
+          <h2 class="result-title">TIME'S UP!</h2>
+          <p class="result-sub" id="gameoverMolecule"></p>
+          <div class="final-score">
+            FINAL SCORE: <span id="finalScore">0</span>
+          </div>
+          <button class="btn-primary" id="playAgainBtn">↺ PLAY AGAIN</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── FOOTER ── -->
+    <footer class="site-footer">
+      <span>MOLECULE BUILDER CHALLENGE</span>
+      <span class="footer-sep">|</span>
+      <span>Powered by TensorFlow.js & Teachable Machine</span>
+      <span class="footer-sep">|</span>
+      <span id="roundCounter">Round 0</span>
+    </footer>
+
+  </div><!-- /.app-wrapper -->
+
+  <!-- ===== SETUP INSTRUCTIONS MODAL ===== -->
+  <div class="modal-backdrop hidden" id="instructionsModal">
+    <div class="modal-box">
+      <h3 class="modal-title">📋 SETUP INSTRUCTIONS</h3>
+      <div class="modal-body">
+        <h4>1. Train Your Teachable Machine Model</h4>
+        <ol>
+          <li>Go to <a href="https://teachablemachine.withgoogle.com" target="_blank">teachablemachine.withgoogle.com</a></li>
+          <li>Choose <strong>Image Project → Standard image model</strong></li>
+          <li>Create 4 classes: <code>Water</code>, <code>Salt</code>, <code>Ammonia</code>, <code>Benzene</code></li>
+          <li>Capture 50–100 images per class using your webcam</li>
+          <li>Click <strong>Train Model</strong>, then <strong>Export Model → Upload (shareable link)</strong></li>
+          <li>Copy the model URL and paste it into the game's URL field</li>
+        </ol>
+        <h4>2. Run Locally</h4>
+        <ol>
+          <li>Place <code>index.html</code>, <code>style.css</code>, <code>script.js</code> in a folder</li>
+          <li>Serve via a local web server (e.g. <code>npx serve .</code> or VS Code Live Server)</li>
+          <li>Allow webcam access when prompted</li>
+        </ol>
+        <h4>3. Using Local Model Files</h4>
+        <p>Alternatively, download your model (<code>model.json</code>, <code>metadata.json</code>, <code>weights.bin</code>) and place them in a <code>model/</code> folder, then set the URL to <code>./model/</code>.</p>
+      </div>
+      <button class="btn-secondary" id="closeInstructions">CLOSE</button>
+    </div>
+  </div>
+
+  <button class="help-btn" id="helpBtn" title="Setup Instructions">?</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
